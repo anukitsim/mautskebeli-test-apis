@@ -11,6 +11,7 @@ const cleanHTML = (html) => {
   // Remove content between square brackets that starts with 'fusion_builder_'
   const cleanedHTML = sanitizedHTML.replace(/\[\/?fusion_[^\]]*\]/g, '');
 
+
   // Convert the HTML string to a DOM object
   const doc = new DOMParser().parseFromString(cleanedHTML, 'text/html');
 
@@ -43,6 +44,8 @@ const cleanHTML = (html) => {
 
   return finalCleanedHTML;
 };
+
+
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
@@ -79,64 +82,67 @@ const Home = () => {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const categoryId = 12; // Replace with the actual category ID
-        const response = await fetch(
-          `http://mau-test.local/wp-json/wp/v2/posts?categories=${categoryId}&per_page=10`
-        );
+        const categoryId = 3; // Replace with the actual category ID
+       const response = await fetch(
+  `http://mau-test.local/wp-json/wp/v2/posts?categories=${categoryId}&per_page=10`
+);
         const data = await response.json();
         console.log("Fetched data:", data);
-
+    
         const sanitizedPosts = data.map((post) => ({
           id: post.id,
           link: post.link,
           title: post.title.rendered,
           content: cleanHTML(DOMPurify.sanitize(post.content.rendered)),
         }));
-
+    
         console.log("Fetched posts:", sanitizedPosts);
         console.log("Number of fetched posts:", sanitizedPosts.length); // Log the length
-
+    
         // Check for duplicate posts only after the initial fetch
         if (!isInitialFetch.current) {
           const uniquePosts = sanitizedPosts.filter(
             (post) => !posts.some((existingPost) => existingPost.content === post.content)
           );
-
-          if (uniquePosts.length > 0) {
-            setPosts((prevPosts) => [...prevPosts, ...uniquePosts]);
-          }
+    
+          setPosts((prevPosts) => [...prevPosts, ...uniquePosts]);
         } else {
           setPosts(sanitizedPosts);
           isInitialFetch.current = false;
         }
-
+    
         setLoading(false);
       } catch (error) {
         console.error("Error fetching posts:", error);
         setLoading(false);
       }
     };
+    
 
     // Fetch posts only if the fetchTrigger is true
     if (fetchTrigger.current) {
       fetchPosts();
     }
-  }, [fetchTrigger, posts]);
+  }, [fetchTrigger]); // Only trigger fetch when fetchTrigger changes
 
-  // Initial fetch on component mount
   useEffect(() => {
-    if (posts.length === 0 && fetchTrigger.current) {
-      fetchTrigger.current = false;
-      fetchVideos();
+    // Initial fetch on component mount
+    if (posts.length === 0) {
+      fetchTrigger.current = true;
     }
   }, [posts]);
+
+  useEffect(() => {
+    // Fetch videos on the initial component mount
+    fetchVideos();
+  }, []); 
 
   return (
     <main>
       <Header />
       <div>
-        {loading && <p>Loading...</p>}
-        <ul className="flex flex-col w-9/12 gap-20 mx-auto">
+       
+      <ul className="flex flex-col w-9/12 gap-20 mx-auto">
           {posts.map((post) => (
             <li key={post.id} className="border-black border-2">
               <a href={post.link} target="_blank" rel="noopener noreferrer">
@@ -158,6 +164,7 @@ const Home = () => {
             </li>
           ))}
         </ul>
+        {loading && <p>Loading...</p>}
         <div ref={loaderRef}></div>
       </div>
     </main>
